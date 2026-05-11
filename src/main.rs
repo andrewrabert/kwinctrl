@@ -92,6 +92,7 @@ struct Args {
     current_user: bool,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_script(
     filter: &str,
     filter_alt: &str,
@@ -500,11 +501,11 @@ fn get_ancestors() -> Vec<u32> {
             if let Some(paren_end) = stat.rfind(')') {
                 let after_comm = &stat[paren_end + 2..];
                 let parts: Vec<&str> = after_comm.split_whitespace().collect();
-                if parts.len() > 1 {
-                    if let Ok(ppid) = parts[1].parse::<u32>() {
-                        current_pid = ppid;
-                        continue;
-                    }
+                if parts.len() > 1
+                    && let Ok(ppid) = parts[1].parse::<u32>()
+                {
+                    current_pid = ppid;
+                    continue;
                 }
             }
         }
@@ -613,16 +614,17 @@ fn is_process_running_regex(re: &regex::Regex, user_filter: Option<&str>) -> boo
         }
 
         let cmdline_path = path.join("cmdline");
-        if let Ok(cmdline) = fs::read_to_string(&cmdline_path) {
-            if re.is_match(&cmdline) {
-                return true;
-            }
+        if let Ok(cmdline) = fs::read_to_string(&cmdline_path)
+            && re.is_match(&cmdline)
+        {
+            return true;
         }
     }
 
     false
 }
 
+#[allow(clippy::too_many_arguments)]
 fn create_script(
     filter: &str,
     filter_alt: &str,
