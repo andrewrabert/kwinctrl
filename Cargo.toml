@@ -10,9 +10,6 @@ rand = "0.8"
 zbus = { version = "5", features = ["blocking"] }
 regex = "1"
 
-[build-dependencies]
-vergen-git2 = { version = "1", features = ["build"] }
-
 [profile.release]
 lto = true
 strip = true

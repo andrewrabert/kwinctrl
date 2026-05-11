@@ -1,18 +1,16 @@
-use vergen_git2::{Emitter, Git2Builder};
+use std::process::Command;
 
 fn main() {
-    println!("cargo:rerun-if-changed=src/");
-    println!("cargo:rerun-if-changed=Cargo.toml");
+    let version = Command::new("git")
+        .args(["describe", "--tags", "--dirty"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|v| v.trim().to_string())
+        .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
 
-    let git2 = Git2Builder::default()
-        .sha(true)
-        .dirty(true)
-        .build()
-        .expect("Failed to build git config");
-
-    Emitter::default()
-        .add_instructions(&git2)
-        .expect("Failed to add git instructions")
-        .emit()
-        .expect("Failed to emit version info");
+    println!("cargo:rustc-env=KWINCTRL_VERSION={version}");
+    println!("cargo:rerun-if-changed=.git/HEAD");
+    println!("cargo:rerun-if-changed=.git/refs");
 }
