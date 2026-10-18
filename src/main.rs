@@ -1,8 +1,7 @@
 use clap::Parser;
 use std::fs;
 use std::process::Command;
-use zbus::blocking::Connection;
-use zbus::zvariant::Value;
+use zbus::{Connection, Variant, block_on};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -311,17 +310,17 @@ fn build_script(
 }
 
 fn get_connection() -> Result<Connection, String> {
-    Connection::session().map_err(|e| e.to_string())
+    block_on(Connection::session()).map_err(|e| e.to_string())
 }
 
 fn kwin_support_information(conn: &Connection) -> Result<String, String> {
-    conn.call_method(
+    block_on(conn.call_method(
         Some("org.kde.KWin"),
         "/KWin",
         Some("org.kde.KWin"),
         "supportInformation",
         &(),
-    )
+    ))
     .map_err(|e| e.to_string())?
     .body()
     .deserialize::<String>()
@@ -330,13 +329,13 @@ fn kwin_support_information(conn: &Connection) -> Result<String, String> {
 
 
 fn kwin_load_script(conn: &Connection, path: &str, name: &str) -> Result<i32, String> {
-    conn.call_method(
+    block_on(conn.call_method(
         Some("org.kde.KWin"),
         "/Scripting",
         Some("org.kde.kwin.Scripting"),
         "loadScript",
         &(path, name),
-    )
+    ))
     .map_err(|e| e.to_string())?
     .body()
     .deserialize::<i32>()
@@ -344,25 +343,25 @@ fn kwin_load_script(conn: &Connection, path: &str, name: &str) -> Result<i32, St
 }
 
 fn kwin_script_run(conn: &Connection, path: &str, interface: &str) -> Result<(), String> {
-    conn.call_method(
+    block_on(conn.call_method(
         Some("org.kde.KWin"),
         path,
         Some(interface),
         "run",
         &(),
-    )
+    ))
     .map_err(|e| e.to_string())?;
     Ok(())
 }
 
 fn kwin_script_stop(conn: &Connection, path: &str, interface: &str) -> Result<(), String> {
-    conn.call_method(
+    block_on(conn.call_method(
         Some("org.kde.KWin"),
         path,
         Some(interface),
         "stop",
         &(),
-    )
+    ))
     .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -401,13 +400,13 @@ fn ver_lt(a: &str, b: &str) -> bool {
     ver_cmp(a, b) == std::cmp::Ordering::Less
 }
 
-fn format_value(value: &Value) -> String {
+fn format_value(value: &Variant) -> String {
     match value {
-        Value::Str(s) => s.to_string(),
-        Value::Bool(b) => b.to_string(),
-        Value::I32(n) => n.to_string(),
-        Value::F64(n) => n.to_string(),
-        Value::Array(arr) => {
+        Variant::Str(s) => s.to_string(),
+        Variant::Bool(b) => b.to_string(),
+        Variant::I32(n) => n.to_string(),
+        Variant::F64(n) => n.to_string(),
+        Variant::Array(arr) => {
             let items: Vec<String> = arr.iter().map(|v| format_value(v)).collect();
             items.join(", ")
         }
@@ -452,18 +451,17 @@ fn get_active_window_uuid(conn: &Connection) -> Result<String, String> {
 fn info_active(conn: &Connection) -> Result<(), String> {
     let uuid = get_active_window_uuid(conn)?;
 
-    let reply = conn
-        .call_method(
-            Some("org.kde.KWin"),
-            "/KWin",
-            Some("org.kde.KWin"),
-            "getWindowInfo",
-            &uuid.as_str(),
-        )
-        .map_err(|e| e.to_string())?;
+    let reply = block_on(conn.call_method(
+        Some("org.kde.KWin"),
+        "/KWin",
+        Some("org.kde.KWin"),
+        "getWindowInfo",
+        &uuid.as_str(),
+    ))
+    .map_err(|e| e.to_string())?;
 
     let body = reply.body();
-    let props: std::collections::HashMap<String, Value> =
+    let props: std::collections::HashMap<String, Variant> =
         body.deserialize().map_err(|e| e.to_string())?;
 
     let mut keys: Vec<&String> = props.keys().collect();
