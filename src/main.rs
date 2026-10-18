@@ -108,17 +108,22 @@ fn build_script(
     max_height: Option<&str>,
     filter_focused: bool,
 ) -> String {
-    let needs_resize = width.is_some() || height.is_some() || scale_factor.is_some()
-        || min_width.is_some() || max_width.is_some() || min_height.is_some() || max_height.is_some();
+    let needs_resize = width.is_some()
+        || height.is_some()
+        || scale_factor.is_some()
+        || min_width.is_some()
+        || max_width.is_some()
+        || min_height.is_some()
+        || max_height.is_some();
     let do_center = center.is_some();
 
     let parse_size_fn = if needs_resize {
         concat!(
             "function parseSize(v, s) {",
-                "if (v === null || v === '') return null;",
-                "var t = String(v);",
-                "if (t.endsWith('%')) return s * (parseFloat(t.slice(0, -1)) / 100);",
-                "return parseFloat(t);",
+            "if (v === null || v === '') return null;",
+            "var t = String(v);",
+            "if (t.endsWith('%')) return s * (parseFloat(t.slice(0, -1)) / 100);",
+            "return parseFloat(t);",
             "}",
         )
     } else {
@@ -140,8 +145,8 @@ fn build_script(
             concat!(
                 "var wsW = sw, wsH = sh;",
                 "if ((wsW / wsH) > {ma}) {{",
-                    "wsH = Math.min(wsW, wsH);",
-                    "wsW = wsH * {ma};",
+                "wsH = Math.min(wsW, wsH);",
+                "wsW = wsH * {ma};",
                 "}}",
                 "w = wsW * {sf};",
                 "h = wsH * {sf};",
@@ -235,7 +240,7 @@ fn build_script(
             format!(
                 concat!(
                     "for (var i = 0; i < cs.length; i++)",
-                        "if (cs[i].resourceClass == '{filter}') m.push(cs[i]);",
+                    "if (cs[i].resourceClass == '{filter}') m.push(cs[i]);",
                 ),
                 filter = filter,
             )
@@ -244,7 +249,7 @@ fn build_script(
                 concat!(
                     "var re = new RegExp('{filter_regex}');",
                     "for (var i = 0; i < cs.length; i++)",
-                        "if (re.exec(cs[i].resourceClass)) m.push(cs[i]);",
+                    "if (re.exec(cs[i].resourceClass)) m.push(cs[i]);",
                 ),
                 filter_regex = filter_regex,
             )
@@ -253,7 +258,7 @@ fn build_script(
                 concat!(
                     "var re = new RegExp('{filter_alt}', 'i');",
                     "for (var i = 0; i < cs.length; i++)",
-                        "if (re.exec(cs[i].caption)) m.push(cs[i]);",
+                    "if (re.exec(cs[i].caption)) m.push(cs[i]);",
                 ),
                 filter_alt = filter_alt,
             )
@@ -261,7 +266,11 @@ fn build_script(
             String::new()
         };
 
-        let toggle_branch = if toggle { "else c.minimized = !c.minimized;" } else { "" };
+        let toggle_branch = if toggle {
+            "else c.minimized = !c.minimized;"
+        } else {
+            ""
+        };
 
         format!(
             concat!(
@@ -270,12 +279,12 @@ fn build_script(
                 "var m = [];",
                 "{match_block}",
                 "if (m.length === 1) {{",
-                    "var c = m[0];",
-                    "if (aw !== c) setActiveClient(c);",
-                    "{toggle_branch}",
+                "var c = m[0];",
+                "if (aw !== c) setActiveClient(c);",
+                "{toggle_branch}",
                 "}} else if (m.length > 1) {{",
-                    "m.sort(function (a, b) {{ return a.stackingOrder - b.stackingOrder; }});",
-                    "setActiveClient(m[0]);",
+                "m.sort(function (a, b) {{ return a.stackingOrder - b.stackingOrder; }});",
+                "setActiveClient(m[0]);",
                 "}}",
             ),
             match_block = match_block,
@@ -287,16 +296,16 @@ fn build_script(
         concat!(
             "{parse_size_fn}",
             "function setActiveClient(c) {{",
-                "c.minimized = false;",
-                "if (c.fullScreen) c.fullScreen = false;",
-                "if (c.maximizeMode && c.maximizeMode !== 0 && typeof c.setMaximize === 'function')",
-                    "c.setMaximize(false, false);",
-                "{geom_init}",
-                "{scale_block}",
-                "{constraints}",
-                "{position_block}",
-                "if (workspace.activeClient !== undefined) workspace.activeClient = c;",
-                "else workspace.activeWindow = c;",
+            "c.minimized = false;",
+            "if (c.fullScreen) c.fullScreen = false;",
+            "if (c.maximizeMode && c.maximizeMode !== 0 && typeof c.setMaximize === 'function')",
+            "c.setMaximize(false, false);",
+            "{geom_init}",
+            "{scale_block}",
+            "{constraints}",
+            "{position_block}",
+            "if (workspace.activeClient !== undefined) workspace.activeClient = c;",
+            "else workspace.activeWindow = c;",
             "}}",
             "{main_block}",
         ),
@@ -327,7 +336,6 @@ fn kwin_support_information(conn: &Connection) -> Result<String, String> {
     .map_err(|e| e.to_string())
 }
 
-
 fn kwin_load_script(conn: &Connection, path: &str, name: &str) -> Result<i32, String> {
     block_on(conn.call_method(
         Some("org.kde.KWin"),
@@ -343,26 +351,14 @@ fn kwin_load_script(conn: &Connection, path: &str, name: &str) -> Result<i32, St
 }
 
 fn kwin_script_run(conn: &Connection, path: &str, interface: &str) -> Result<(), String> {
-    block_on(conn.call_method(
-        Some("org.kde.KWin"),
-        path,
-        Some(interface),
-        "run",
-        &(),
-    ))
-    .map_err(|e| e.to_string())?;
+    block_on(conn.call_method(Some("org.kde.KWin"), path, Some(interface), "run", &()))
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
 fn kwin_script_stop(conn: &Connection, path: &str, interface: &str) -> Result<(), String> {
-    block_on(conn.call_method(
-        Some("org.kde.KWin"),
-        path,
-        Some(interface),
-        "stop",
-        &(),
-    ))
-    .map_err(|e| e.to_string())?;
+    block_on(conn.call_method(Some("org.kde.KWin"), path, Some(interface), "stop", &()))
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -380,9 +376,7 @@ fn get_kwin_version(conn: &Connection) -> Result<String, String> {
 }
 
 fn parse_version(v: &str) -> Vec<u32> {
-    v.split('.')
-        .filter_map(|s| s.parse().ok())
-        .collect()
+    v.split('.').filter_map(|s| s.parse().ok()).collect()
 }
 
 fn ver_cmp(a: &str, b: &str) -> std::cmp::Ordering {
@@ -433,8 +427,18 @@ fn get_active_window_uuid(conn: &Connection) -> Result<String, String> {
     // Read the script's print() output from journal
     std::thread::sleep(std::time::Duration::from_millis(100));
     let output = std::process::Command::new("journalctl")
-        .args(["--user", "-t", "kwin_wayland", "--since", "5 seconds ago",
-               "--no-pager", "-o", "cat", "--grep", &marker])
+        .args([
+            "--user",
+            "-t",
+            "kwin_wayland",
+            "--since",
+            "5 seconds ago",
+            "--no-pager",
+            "-o",
+            "cat",
+            "--grep",
+            &marker,
+        ])
         .output()
         .map_err(|e| e.to_string())?;
 
@@ -640,9 +644,20 @@ fn create_script(
     filter_focused: bool,
 ) -> Result<tempfile::NamedTempFile, String> {
     let content = build_script(
-        filter, filter_alt, filter_regex, toggle, center,
-        scale_factor, max_aspect, width, height,
-        min_width, max_width, min_height, max_height, filter_focused,
+        filter,
+        filter_alt,
+        filter_regex,
+        toggle,
+        center,
+        scale_factor,
+        max_aspect,
+        width,
+        height,
+        min_width,
+        max_width,
+        min_height,
+        max_height,
+        filter_focused,
     );
 
     let file = tempfile::NamedTempFile::new().map_err(|e| e.to_string())?;
@@ -662,8 +677,11 @@ fn main() -> Result<(), String> {
     let filter_alt = args.filter_alt.as_deref().unwrap_or("");
     let filter_regex = args.filter_regex.as_deref().unwrap_or("");
 
-    if !args.filter_focused && filter.is_empty() && filter_alt.is_empty() && filter_regex.is_empty() {
-        eprintln!("If you want that this program find a window, you need to specify a window filter — either by class (`-f`), by title (`-fa`), by regex (`-fr`), or use `--filter-focused`. More information can be seen if this script is called using the `--help` parameter.");
+    if !args.filter_focused && filter.is_empty() && filter_alt.is_empty() && filter_regex.is_empty()
+    {
+        eprintln!(
+            "If you want that this program find a window, you need to specify a window filter — either by class (`-f`), by title (`-fa`), by regex (`-fr`), or use `--filter-focused`. More information can be seen if this script is called using the `--help` parameter."
+        );
         std::process::exit(1);
     }
 
@@ -745,11 +763,19 @@ fn main() -> Result<(), String> {
         if args.center.is_some() {
             std::thread::sleep(std::time::Duration::from_millis(args.center_delay));
             let script_file = create_script(
-                "", "", "", false, Some("always"),
-                args.scale_factor, args.max_aspect,
-                args.width.as_deref(), args.height.as_deref(),
-                args.min_width.as_deref(), args.max_width.as_deref(),
-                args.min_height.as_deref(), args.max_height.as_deref(),
+                "",
+                "",
+                "",
+                false,
+                Some("always"),
+                args.scale_factor,
+                args.max_aspect,
+                args.width.as_deref(),
+                args.height.as_deref(),
+                args.min_width.as_deref(),
+                args.max_width.as_deref(),
+                args.min_height.as_deref(),
+                args.max_height.as_deref(),
                 true, // filter_focused - operate on active window
             )?;
             let script_path = script_file.path().to_string_lossy();
